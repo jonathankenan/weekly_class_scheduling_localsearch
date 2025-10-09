@@ -1,0 +1,14 @@
+{
+  "courses": [
+    {"code": "IF3071_K01", "student_count": 60, "credits": 3},
+    {"code": "IF3130_K01", "student_count": 45, "credits": 2}
+  ],
+  "classes": [
+    {"code": "7609", "capacity": 60},
+    {"code": "7606", "capacity": 80}
+  ],
+  "students": [
+    {"nim": "13523601", "course_list": ["IF3071_K01", "IF3130_K01"], "priority": [1, 2]},
+    {"nim": "13523641", "course_list": ["IF3110_K02", "IF3130_K01"], "priority": [1, 2]}
+  ]
+}
