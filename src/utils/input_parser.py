@@ -1,6 +1,6 @@
 import json
 import os
-from models import Class, Course, Student
+from core.models import Class, Course, Student
 
 def load_json(file_path: str):
     try:
