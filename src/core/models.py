@@ -50,7 +50,7 @@ class ClassMeeting:
     meeting_id: int
     course_code: str
     classroom_code: str | None
-    time_slot: TimeSlot
+    # time_slot: TimeSlot
     duration_hours: int
     student_count: int
     students: Optional[List[str]] = None
