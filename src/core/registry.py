@@ -1,4 +1,4 @@
-from models import Course, Classroom, Student, ClassMeeting
+from core.models import Course, Classroom, Student, ClassMeeting
 from dataclasses import dataclass, field
 from typing import Dict, List
 from utils.input_parser import load_json
@@ -41,7 +41,7 @@ class Registry:
                 self.meetings[meeting_id] = ClassMeeting(
                     meeting_id=meeting_id,
                     course_code=course.code,
-                    class_code=course.code.split("_")[1] if "_" in course.code else None,
+                    classroom_code=course.code.split("_")[1] if "_" in course.code else None,
                     duration_hours=1,
                     student_count=course.student_count
                 )
@@ -85,3 +85,4 @@ class Registry:
 
     def get_student(self, nim: str) -> Student:
         return self.students[nim]
+    
