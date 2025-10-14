@@ -1,8 +1,3 @@
-"""
-Objective Function for Course Scheduling Optimization.
-Evaluates schedule quality based on student time conflicts (MINIMIZATION).
-"""
-
 from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Tuple
 
