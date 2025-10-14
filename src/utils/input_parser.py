@@ -1,48 +1,55 @@
 import json
 import os
-from core.models import Class, Course, Student
+from core.models import Classroom, Course, Student
 
 def load_json(file_path: str):
+    """
+    Parse JSON file from the official AI Lab 2025/2026 format.
+    Returns:
+        courses_dict, classrooms_dict, students_dict
+    """
+
     try:
         with open(file_path, 'r') as file:
             data_json = json.load(file)
             file_name = os.path.basename(file_path)
         print(f"Successfully loaded data from {file_name}")
 
-        # Extract each feature
-        courses = data_json['courses']
-        classes = data_json['classes']
-        students = data_json['students']
+        # Extract top-level keys (based on the spec)
+        raw_courses = data_json["kelas_mata_kuliah"]
+        raw_classrooms = data_json["ruangan"]
+        raw_students = data_json["mahasiswa"]
 
-        course_list, class_list, student_list = [], [], []
+        courses = {}
+        classrooms = {}
+        students = {}
 
-        for course in courses:
-            code = course['code']
-            student_count = course['student_count']
-            credits = course['credits']
+        # ---- Load Courses ----
+        for course in raw_courses:
+            code = course["kode"]
+            student_count = course["jumlah_mahasiswa"]
+            credits = course["sks"]
             new_course = Course(code, student_count, credits)
-            print(new_course)
-            course_list.append(new_course)
+            courses[code] = new_course
 
-        for cls in classes:
-             class_code = cls['code']
-             capacity = cls['capacity']
-             new_class = Class(class_code, capacity)
-             print(new_class)
-             class_list.append(new_class)
+        # ---- Load Classrooms ----
+        for cls in raw_classrooms:
+            class_code = cls["kode"]
+            capacity = cls["kuota"]
+            new_classroom = Classroom(class_code, capacity)
+            classrooms[class_code] = new_classroom
 
-        for student in students:
-            nim = student['nim']
-            course_list = student['course_list'] 
-            priority = student['priority']
+        # ---- Load Students ----
+        for student in raw_students:
+            nim = student["nim"]
+            course_list = student["daftar_mk"]
+            priority = student["prioritas"]
             new_student = Student(nim, course_list, priority)
-            print(new_student)
-            student_list.append(new_student)
-        
-        return course_list, class_list, student_list
-    except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found.")
-    except json.JSONDecodeError:
-        print("Error: Invalid JSON format.")
+            students[nim] = new_student
 
-    
+        return courses, classrooms, students
+
+    except FileNotFoundError:
+        print(f"❌ Error: File '{file_path}' not found.")
+    except json.JSONDecodeError:
+        print("❌ Error: Invalid JSON format.")
