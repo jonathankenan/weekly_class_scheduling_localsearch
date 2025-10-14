@@ -1,0 +1,217 @@
+{
+  "kelas_mata_kuliah": [
+    {
+      "kode": "IF2110_K01",
+      "jumlah_mahasiswa": 80,
+      "sks": 4
+    },
+    {
+      "kode": "IF2110_K02",
+      "jumlah_mahasiswa": 75,
+      "sks": 4
+    },
+    {
+      "kode": "IF2111_K01",
+      "jumlah_mahasiswa": 60,
+      "sks": 2
+    },
+    {
+      "kode": "IF2120_K01",
+      "jumlah_mahasiswa": 70,
+      "sks": 3
+    },
+    {
+      "kode": "IF2120_K02",
+      "jumlah_mahasiswa": 65,
+      "sks": 3
+    },
+    {
+      "kode": "IF2130_K01",
+      "jumlah_mahasiswa": 55,
+      "sks": 3
+    },
+    {
+      "kode": "IF2140_K01",
+      "jumlah_mahasiswa": 90,
+      "sks": 4
+    },
+    {
+      "kode": "IF2150_K01",
+      "jumlah_mahasiswa": 50,
+      "sks": 2
+    },
+    {
+      "kode": "IF2150_K02",
+      "jumlah_mahasiswa": 48,
+      "sks": 2
+    },
+    {
+      "kode": "IF2160_K01",
+      "jumlah_mahasiswa": 85,
+      "sks": 3
+    },
+    {
+      "kode": "IF2170_K01",
+      "jumlah_mahasiswa": 40,
+      "sks": 2
+    },
+    {
+      "kode": "IF2180_K01",
+      "jumlah_mahasiswa": 95,
+      "sks": 4
+    },
+    {
+      "kode": "IF2190_K01",
+      "jumlah_mahasiswa": 60,
+      "sks": 3
+    },
+    {
+      "kode": "IF2200_K01",
+      "jumlah_mahasiswa": 70,
+      "sks": 3
+    },
+    {
+      "kode": "IF2210_K01",
+      "jumlah_mahasiswa": 55,
+      "sks": 2
+    }
+  ],
+
+  "ruangan": [
+    {
+      "kode": "7601",
+      "kuota": 50
+    },
+    {
+      "kode": "7602",
+      "kuota": 60
+    },
+    {
+      "kode": "7603",
+      "kuota": 70
+    },
+    {
+      "kode": "7604",
+      "kuota": 80
+    },
+    {
+      "kode": "7605",
+      "kuota": 90
+    },
+    {
+      "kode": "7606",
+      "kuota": 100
+    },
+    {
+      "kode": "7607",
+      "kuota": 40
+    },
+    {
+      "kode": "7608",
+      "kuota": 50
+    }
+  ],
+
+  "mahasiswa": [
+    {
+      "nim": "13521001",
+      "daftar_mk": ["IF2110_K01", "IF2120_K01", "IF2130_K01", "IF2140_K01"],
+      "prioritas": [1, 2, 3, 4]
+    },
+    {
+      "nim": "13521002",
+      "daftar_mk": ["IF2110_K02", "IF2111_K01", "IF2150_K01", "IF2160_K01"],
+      "prioritas": [1, 2, 3, 4]
+    },
+    {
+      "nim": "13521003",
+      "daftar_mk": ["IF2120_K02", "IF2140_K01", "IF2170_K01"],
+      "prioritas": [1, 2, 3]
+    },
+    {
+      "nim": "13521004",
+      "daftar_mk": ["IF2110_K01", "IF2120_K01", "IF2180_K01", "IF2190_K01"],
+      "prioritas": [1, 2, 3, 4]
+    },
+    {
+      "nim": "13521005",
+      "daftar_mk": ["IF2130_K01", "IF2150_K02", "IF2200_K01"],
+      "prioritas": [1, 2, 3]
+    },
+    {
+      "nim": "13521006",
+      "daftar_mk": ["IF2110_K02", "IF2120_K02", "IF2160_K01", "IF2210_K01"],
+      "prioritas": [1, 2, 3, 4]
+    },
+    {
+      "nim": "13521007",
+      "daftar_mk": ["IF2140_K01", "IF2180_K01", "IF2190_K01"],
+      "prioritas": [1, 2, 3]
+    },
+    {
+      "nim": "13521008",
+      "daftar_mk": ["IF2111_K01", "IF2150_K01", "IF2170_K01", "IF2200_K01"],
+      "prioritas": [1, 2, 3, 4]
+    },
+    {
+      "nim": "13521009",
+      "daftar_mk": ["IF2110_K01", "IF2130_K01", "IF2160_K01"],
+      "prioritas": [1, 2, 3]
+    },
+    {
+      "nim": "13521010",
+      "daftar_mk": ["IF2120_K01", "IF2140_K01", "IF2180_K01", "IF2210_K01"],
+      "prioritas": [1, 2, 3, 4]
+    },
+    {
+      "nim": "13521011",
+      "daftar_mk": ["IF2110_K02", "IF2150_K02", "IF2190_K01"],
+      "prioritas": [1, 2, 3]
+    },
+    {
+      "nim": "13521012",
+      "daftar_mk": ["IF2120_K02", "IF2130_K01", "IF2170_K01", "IF2200_K01"],
+      "prioritas": [1, 2, 3, 4]
+    },
+    {
+      "nim": "13521013",
+      "daftar_mk": ["IF2111_K01", "IF2140_K01", "IF2160_K01"],
+      "prioritas": [1, 2, 3]
+    },
+    {
+      "nim": "13521014",
+      "daftar_mk": ["IF2110_K01", "IF2150_K01", "IF2180_K01", "IF2210_K01"],
+      "prioritas": [1, 2, 3, 4]
+    },
+    {
+      "nim": "13521015",
+      "daftar_mk": ["IF2120_K01", "IF2130_K01", "IF2190_K01"],
+      "prioritas": [1, 2, 3]
+    },
+    {
+      "nim": "13521016",
+      "daftar_mk": ["IF2110_K02", "IF2140_K01", "IF2170_K01", "IF2200_K01"],
+      "prioritas": [1, 2, 3, 4]
+    },
+    {
+      "nim": "13521017",
+      "daftar_mk": ["IF2120_K02", "IF2150_K02", "IF2160_K01"],
+      "prioritas": [1, 2, 3]
+    },
+    {
+      "nim": "13521018",
+      "daftar_mk": ["IF2111_K01", "IF2130_K01", "IF2180_K01", "IF2210_K01"],
+      "prioritas": [1, 2, 3, 4]
+    },
+    {
+      "nim": "13521019",
+      "daftar_mk": ["IF2110_K01", "IF2140_K01", "IF2190_K01"],
+      "prioritas": [1, 2, 3]
+    },
+    {
+      "nim": "13521020",
+      "daftar_mk": ["IF2120_K01", "IF2150_K01", "IF2170_K01", "IF2200_K01"],
+      "prioritas": [1, 2, 3, 4]
+    }
+  ]
+}
