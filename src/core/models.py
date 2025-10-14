@@ -2,12 +2,8 @@ from dataclasses import dataclass
 from typing import List, Optional
 from enum import Enum
 
-# @dataclass automatically provides:
-# 1. __init__()
-# 2.__repr__()
-# 3. __eq__()
-
 class DAY(Enum):
+    """Enumeration for days of the week."""
     MONDAY = "Monday"
     TUESDAY = "Tuesday"
     WEDNESDAY = "Wednesday"
@@ -16,42 +12,51 @@ class DAY(Enum):
 
 @dataclass
 class Course:
-    code: str
-    student_count:int
-    credits: int 
+    """Represents a course/subject with its basic information."""
+    code: str           # Course identifier (e.g., "CS101")
+    student_count: int  # Number of students enrolled
+    credits: int        # Credit hours/weight of the course
 
 @dataclass
 class Classroom:
-    code: str
-    capacity: int
+    """Represents a physical classroom with capacity."""
+    code: str       # Room identifier (e.g., "R101")
+    capacity: int   # Maximum number of students the room can hold
 
 @dataclass
 class Student:
-    nim: str
-    course_list: list[str]
-    priority: list[int]
+    """Represents a student with their course preferences."""
+    nim: str                    # Student ID number
+    course_list: list[str]      # List of course codes the student wants to take
+    priority: list[int]         # Priority ranking for each course (same order as course_list)
 
 @dataclass
 class TimeSlot:
-    start_time: tuple[DAY, int]
-    stop_time: tuple[DAY, int]
+    """Represents a time period from start to end."""
+    start_time: tuple[DAY, int]  # (day, hour) when the slot starts
+    stop_time: tuple[DAY, int]   # (day, hour) when the slot ends
 
     def duration(self) -> int:
-        sd, sh = self.start_time
-        ed, eh = self.stop_time
+        """Calculate duration in hours between start and stop time."""
+        sd, sh = self.start_time    # start day, start hour
+        ed, eh = self.stop_time     # end day, end hour
+        
+        # Validate that start and end are on the same day
         if sd != ed:
-            raise ValueError("Cross-day timem slot is not supported")
+            raise ValueError("Cross-day time slot is not supported")
+        
+        # Validate that end time is after start time
         if eh <= sh:
             raise ValueError("stop_time has to be bigger than start_time")
-        return eh - sh
+        
+        return eh - sh  # Return duration in hours
 
-@dataclass(frozen=True) # frozen=True will make objects from this class be immutable (have the attribute be unchangeable)
+@dataclass(frozen=True)
 class ClassMeeting:
-    meeting_id: int
-    course_code: str
-    classroom_code: str | None
-    # time_slot: TimeSlot
-    duration_hours: int
-    student_count: int
-    students: Optional[List[str]] = None
-
+    """Represents a single class meeting/session (immutable once created)."""
+    meeting_id: int                     # Unique identifier for this meeting
+    course_code: str                    # Which course this meeting belongs to
+    classroom_code: str | None          # Which room is assigned (None if not yet assigned)
+    duration_hours: int                 # How long the meeting lasts
+    student_count: int                  # Number of students attending
+    students: Optional[List[str]] = None # List of student IDs attending (optional)
