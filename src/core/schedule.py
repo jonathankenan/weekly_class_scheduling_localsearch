@@ -252,6 +252,45 @@ class Schedule:
         """
         return [(mid, d, h, r) for mid, (d, h, r) in self.where_is.items()]
 
+    def print_schedule_table(self, registry: 'Registry') -> None:
+        """
+        Print a visual table representation of the schedule.
+        Shows days as columns, hours as rows, and course codes in each slot.
+        
+        Args:
+            registry: Registry instance to access meeting details
+        """
+        print("\n" + "="*100)
+        print("SCHEDULE TABLE")
+        print("="*100)
+        
+        # Header: Days
+        header = "Hour |"
+        for day in self.days:
+            header += f" {day.name:<18} |"
+        print(header)
+        print("-" * len(header))
+        
+        # Rows: Hours
+        for hour in self.hours:
+            row = f"{hour:4} |"
+            for day in self.days:
+                slot_content = ""
+                room_contents = []
+                for room in self.classroom_codes:
+                    mid = self.occupancy[(day, hour)].get(room)
+                    if mid is not None:
+                        course_code = registry.meetings[mid].course_code
+                        room_contents.append(f"{room}:{course_code}")
+                if room_contents:
+                    slot_content = ", ".join(room_contents)
+                else:
+                    slot_content = "Empty"
+                row += f" {slot_content:<18} |"
+            print(row)
+        
+        print("="*100)
+
     # ---------- Static Factory Methods ----------
     @staticmethod
     def generate_random_schedule(registry: 'Registry') -> 'Schedule':

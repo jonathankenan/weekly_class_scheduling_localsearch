@@ -1,3 +1,4 @@
+import time
 from typing import Optional
 from core.registry import Registry
 from core.schedule import Schedule
@@ -12,22 +13,21 @@ class RandomRestartHillClimbing:
         self.max_iterations_per_restart = max_iterations_per_restart
         self.objective = ScheduleObjective(registry)
     
-    def run(self) -> tuple[Schedule, float, list, int]:
+    def run(self) -> tuple[Schedule, Schedule, float, list, int, float, list]:
+        start_time = time.time()
         global_best_schedule = None
         global_best_score = float('inf')
         global_history = []
+        iterations_list = []
         
-        print(f"Starting Random Restart Hill Climbing with max {self.max_restarts} restarts")
+        initial_schedule = None
         
         for restart in range(self.max_restarts):
-            print(f"\nRestart {restart + 1}/{self.max_restarts} ---")
-            
-            current = Schedule.generate_random_schedule(self.registry)
+            current = Schedule.random_initial_assignment(self.registry)
             current_score = self.objective.evaluate(current)
             
-            print(f"Initial score: {current_score}")
-            
             if restart == 0:
+                initial_schedule = current
                 global_history.append(current_score)
             
             iteration = 0
@@ -38,7 +38,6 @@ class RandomRestartHillClimbing:
                 neighbors = generate_neighbors(current, self.registry)
                 
                 if not neighbors:
-                    print(f"No neighbors found at iteration {iteration}")
                     break
                 
                 best_neighbor = None
@@ -51,7 +50,6 @@ class RandomRestartHillClimbing:
                         best_neighbor = neighbor
                 
                 if best_neighbor is None:
-                    print(f"Local optimum reached at iteration {iteration} with score {current_score}")
                     break
                 
                 current = best_neighbor
@@ -61,21 +59,18 @@ class RandomRestartHillClimbing:
                     global_history.append(current_score)
                 
                 if current_score == 0:
-                    print(f"Optimal solution found at iteration {iteration}")
                     break
             
-            print(f"Restart {restart + 1} final score: {current_score}")
+            iterations_list.append(iteration)
             
             if current_score < global_best_score:
                 global_best_score = current_score
                 global_best_schedule = current
-                print(f"New global best: {global_best_score}")
             
             if global_best_score == 0:
-                print(f"\nOptimal solution found! Stopping early at restart {restart + 1}")
                 break
         
-        print(f"\nFinal global best score: {global_best_score}")
-        print(f"Total restarts performed: {restart + 1}")
+        end_time = time.time()
+        duration = end_time - start_time
         
-        return global_best_schedule, global_best_score, global_history, restart + 1
+        return initial_schedule, global_best_schedule, global_best_score, global_history, restart + 1, duration, iterations_list

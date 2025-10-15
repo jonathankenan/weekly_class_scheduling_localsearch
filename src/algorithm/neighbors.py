@@ -1,6 +1,3 @@
-"""
-Shared neighbor generation function for Hill Climbing algorithms
-"""
 import random
 from core.registry import Registry
 from core.schedule import Schedule
@@ -52,7 +49,6 @@ def generate_neighbors(schedule: Schedule, registry: Registry) -> list:
                         neighbors.append(new_schedule)
     
     return neighbors
-
 
 def generate_random_neighbor(schedule: Schedule, registry: Registry) -> Schedule:
     neighbors = generate_neighbors(schedule, registry)
