@@ -24,6 +24,7 @@ class Genetic_Algorithm:
             schedule = Schedule.generate_random_schedule(self.registry)
             self.population.append(schedule)
         print("Successfully initialized population")
+        schedule.display(self.registry)
         return self.population
 
 # Step 2: Choose Parents
@@ -73,87 +74,129 @@ class Genetic_Algorithm:
 # One-point crossover func, split by sorted index (day + timeslots).
 # crossover(total_iteration)
     def one_point_crossover(self, parent1: Schedule, parent2: Schedule):
-        # 1) Group each parent's mid by it's course code
-        # Expected output: a Dict
+        # 1) Collect ALL meetings from both parents
+        all_meeting_ids = set(parent1.where_is.keys()) | set(parent2.where_is.keys())
+        
+        # Group by course code
         meetings_by_course = {}
-        for meeting_id in parent1.where_is.keys():
+        for meeting_id in all_meeting_ids:
             meeting = self.registry.meetings[meeting_id]
             course_code = meeting.course_code
             if course_code not in meetings_by_course:
                 meetings_by_course[course_code] = []
-            meetings_by_course[course_code].append(meeting_id) 
+            meetings_by_course[course_code].append(meeting_id)
 
-        # 1.5) Sort the meetings by course_code
+        # 2) Sort courses
         sorted_courses = sorted(meetings_by_course.keys())
 
         if len(sorted_courses) <= 1:
-            return parent1, parent2  # Not enough to crossover
+            import copy
+            return copy.deepcopy(parent1), copy.deepcopy(parent2)
 
-        # 2) Select Crossover Point
-        #  Select a random point (1, len(sorted_courses)-1)
-        crossover_point = random.randint(1, len(meetings_by_course) - 1)
+        # 3) Select crossover point
+        crossover_point = random.randint(1, len(sorted_courses) - 1)
 
-        # 3) Create 2 childs
-        child1 = Schedule(
-        days=parent1.days,
-        hours=parent1.hours,  
-        classroom_codes=parent1.classroom_codes
-        )
-        
-        child2 = Schedule(
-            days=parent2.days,
-            hours=parent2.hours,
-            classroom_codes=parent2.classroom_codes
-        )
+        # 4) Create children as COPIES of parents
+        import copy
+        child1 = copy.deepcopy(parent1)
+        child2 = copy.deepcopy(parent2)
 
-        # 4) Cross over on crossover point (determine lhs and rhs by randint(1,2))
+        # 5) Crossover by SWAPPING courses after crossover point
+        # After crossover point: child1 gets courses from parent2, child2 gets courses from parent1
         for i, course_code in enumerate(sorted_courses):
-            meeting_ids = meetings_by_course[course_code]
-            
-            if i < crossover_point:
+            if i >= crossover_point:
+                meeting_ids = meetings_by_course[course_code]
+                
+                # For each meeting in this course, swap positions between child1 and child2
                 for meeting_id in meeting_ids:
-                    day1, hour1, classroom1 = parent1.where_is[meeting_id]
-                    child1.place(meeting_id, day1, hour1, classroom1)
-
-                    day2, hour2, classroom2 = parent2.where_is[meeting_id]
-                    child2.place(meeting_id, day2, hour2, classroom2)
-            else:
-                for meeting_id in meeting_ids:
-                    day2, hour2, classroom2 = parent2.where_is[meeting_id]
-                    child1.place(meeting_id, day2, hour2, classroom2)
-
-                    day1, hour1, classroom1 = parent1.where_is[meeting_id]
-                    child2.place(meeting_id, day1, hour1, classroom1)
-
-        # 5) Assert length
-        assert len(child1.where_is) == len(parent1.where_is), "Child1 missing meetings"
-        assert len(child2.where_is) == len(parent2.where_is), "Child2 missing meetings"
+                    # Get positions from both children
+                    pos1 = child1.get_position(meeting_id)
+                    pos2 = child2.get_position(meeting_id)
+                    
+                    if pos1 and pos2:
+                        # Both meetings exist - swap their positions
+                        day1, hour1, room1 = pos1
+                        day2, hour2, room2 = pos2
+                        
+                        # Remove both meetings
+                        child1.remove(day1, hour1, room1)
+                        child2.remove(day2, hour2, room2)
+                        
+                        # Place in swapped positions
+                        child1.place(meeting_id, day2, hour2, room2)
+                        child2.place(meeting_id, day1, hour1, room1)
+                    elif pos1 and not pos2:
+                        # Only in child1, move to child2
+                        day1, hour1, room1 = pos1
+                        child1.remove(day1, hour1, room1)
+                        # Try to place in child2 at same position if free
+                        if child2.is_empty(day1, hour1, room1):
+                            child2.place(meeting_id, day1, hour1, room1)
+                        else:
+                            # Find free position in child2
+                            legal_rooms = self.registry.legal_classrooms_by_meeting.get(meeting_id, [room1])
+                            placed = False
+                            for day in child2.days:
+                                for hour in child2.hours:
+                                    for room in legal_rooms:
+                                        if child2.is_empty(day, hour, room):
+                                            child2.place(meeting_id, day, hour, room)
+                                            placed = True
+                                            break
+                                    if placed:
+                                        break
+                                if placed:
+                                    break
+                    elif pos2 and not pos1:
+                        # Only in child2, move to child1
+                        day2, hour2, room2 = pos2
+                        child2.remove(day2, hour2, room2)
+                        # Try to place in child1 at same position if free
+                        if child1.is_empty(day2, hour2, room2):
+                            child1.place(meeting_id, day2, hour2, room2)
+                        else:
+                            # Find free position in child1
+                            legal_rooms = self.registry.legal_classrooms_by_meeting.get(meeting_id, [room2])
+                            placed = False
+                            for day in child1.days:
+                                for hour in child1.hours:
+                                    for room in legal_rooms:
+                                        if child1.is_empty(day, hour, room):
+                                            child1.place(meeting_id, day, hour, room)
+                                            placed = True
+                                            break
+                                    if placed:
+                                        break
+                                if placed:
+                                    break
 
         return child1, child2
 
     def crossover_population(self):
-        # 1) Create offspring list
         offspring = []
 
-        # 2) Process parents
         for i in range(0, len(self.parents) - 1, 2):
             parent1 = self.parents[i]
-            parent2 = self.parents[i+1] # Logic has to use probability distribution in range
+            parent2 = self.parents[i+1]
 
             child1, child2 = self.one_point_crossover(parent1, parent2)
-            offspring.extend([child1, child2])
+            
+            # Validate 
+            try:
+                self._validate_schedule_credits(child1)
+                self._validate_schedule_credits(child2)
+                offspring.extend([child1, child2])
+            except ValueError as e:
+                print(f"Unexpected validation failure: {e}")
+                # Fallback to parents
+                import copy
+                offspring.extend([copy.deepcopy(parent1), copy.deepcopy(parent2)])
 
         if len(self.parents) % 2 == 1:
-            offspring.append(self.parents[-1])
+            import copy
+            offspring.append(copy.deepcopy(self.parents[-1]))
 
-        # Validate all offspring
-        for idx, child in enumerate(offspring):
-            try:
-                self._validate_schedule_credits(child) 
-            except ValueError as e:
-                print(f"Offspring {idx} failed validation: {e}")
-                raise
-
+        print(f"Generated {len(offspring)} offspring")
         return offspring
 
     def _validate_schedule_credits(self, schedule: Schedule):

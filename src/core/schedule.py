@@ -301,3 +301,60 @@ class Schedule:
                 attempts += 1
         
         return schedule
+    
+# ---------- Visualization Methods ----------
+    def display(self, registry: Optional['Registry'] = None) -> None:
+        """
+        Display the schedule as a formatted timetable grid.
+        
+        Args:
+            registry: Optional Registry to show course names instead of meeting IDs
+        """
+        print("\n" + "=" * 120)
+        print("SCHEDULE VISUALIZATION")
+        print("=" * 120)
+        
+        # Header: Days
+        header = f"{'Hour':<8}"
+        for day in self.days:
+            header += f"| {str(day):<20} "
+        print(header)
+        print("-" * 120)
+        
+        # Rows: Hours
+        for hour in self.hours:
+            row = f"{hour:02d}:00   "
+            
+            for day in self.days:
+                # Get all meetings at this time across all rooms
+                meetings_at_time = []
+                for room in self.classroom_codes:
+                    mid = self.who_at(day, hour, room)
+                    if mid is not None:
+                        if registry:
+                            meeting = registry.meetings[mid]
+                            course_code = meeting.course_code
+                            meetings_at_time.append(f"{course_code}@{room}")
+                        else:
+                            meetings_at_time.append(f"M{mid}@{room}")
+                
+                # Format cell content
+                if meetings_at_time:
+                    cell = ", ".join(meetings_at_time[:2])  # Show max 2 meetings
+                    if len(meetings_at_time) > 2:
+                        cell += f" +{len(meetings_at_time)-2}"
+                else:
+                    cell = "-"
+                
+                row += f"| {cell:<20} "
+            
+            print(row)
+        
+        print("=" * 120)
+        
+        # Summary statistics
+        total_slots = len(self.days) * len(self.hours) * len(self.classroom_codes)
+        occupied_slots = len(self.where_is)
+        print(f"\nSummary: {occupied_slots}/{total_slots} slots occupied ({occupied_slots/total_slots*100:.1f}%)")
+        print(f"Total meetings placed: {occupied_slots}")
+        print()
