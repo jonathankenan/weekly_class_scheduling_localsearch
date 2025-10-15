@@ -266,7 +266,7 @@ class Schedule:
             Schedule with randomly placed meetings
         """
         # Define schedule dimensions
-        days = [DAY.MONDAY, DAY.TUESDAY, DAY.WEDNESDAY, DAY.THURSDAY, DAY.FRIDAY]
+        days = list(DAY)
         hours = list(range(7, 18))  # 7 AM to 5 PM
         classroom_codes = list(registry.classrooms.keys())
         
@@ -299,5 +299,34 @@ class Schedule:
                     placed = True
                 
                 attempts += 1
+        
+        return schedule
+    
+    @staticmethod
+    def random_initial_assignment(registry: 'Registry') -> 'Schedule':
+        """
+        Generate a completely random initial schedule without constraint checking.
+        Places all meetings randomly into available positions.
+        This can create invalid schedules with conflicts, useful for testing optimization algorithms.
+        
+        Args:
+            registry: Registry containing meetings, classrooms, and constraints
+            
+        Returns:
+            Schedule with all meetings randomly placed (may be invalid)
+        """
+        # Define schedule dimensions
+        days = list(DAY)
+        hours = list(range(7, 18))  # 7 AM to 5 PM
+        classroom_codes = list(registry.classrooms.keys())
+        
+        schedule = Schedule(days, hours, classroom_codes)
+        meetings = list(registry.meetings.keys())
+        free_positions = schedule.all_free_positions()
+        random.shuffle(free_positions)
+        
+        for mid, pos in zip(meetings, free_positions):
+            d, h, r = pos
+            schedule.place(mid, d, h, r)
         
         return schedule
