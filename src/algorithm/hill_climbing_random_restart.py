@@ -17,7 +17,7 @@ class RandomRestartHillClimbing:
         start_time = time.time()
         global_best_schedule = None
         global_best_score = float('inf')
-        global_history = []
+        global_history = []  
         iterations_list = []
         
         initial_schedule = None
@@ -26,9 +26,10 @@ class RandomRestartHillClimbing:
             current = Schedule.random_initial_assignment(self.registry)
             current_score = self.objective.evaluate(current)
             
+            local_history = [current_score]  # History for this restart
+            
             if restart == 0:
                 initial_schedule = current
-                global_history.append(current_score)
             
             iteration = 0
             
@@ -54,14 +55,13 @@ class RandomRestartHillClimbing:
                 
                 current = best_neighbor
                 current_score = best_score
-                
-                if restart == 0:
-                    global_history.append(current_score)
+                local_history.append(current_score)
                 
                 if current_score == 0:
                     break
             
             iterations_list.append(iteration)
+            global_history.append(local_history)  # Append history of this restart
             
             if current_score < global_best_score:
                 global_best_score = current_score
@@ -73,4 +73,4 @@ class RandomRestartHillClimbing:
         end_time = time.time()
         duration = end_time - start_time
         
-        return initial_schedule, global_best_schedule, global_best_score, global_history, restart + 1, duration, iterations_list
+        return initial_schedule, global_best_schedule, global_best_score, global_history, restart, duration, iterations_list
