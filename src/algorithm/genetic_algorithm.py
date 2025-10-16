@@ -2,7 +2,9 @@ from core.registry import Registry
 from core.schedule import Schedule
 from core.objective import ScheduleObjective
 from typing import Optional
+from typing import Tuple, List, Optional
 import random
+import time
 
 
 class Genetic_Algorithm:
@@ -21,9 +23,9 @@ class Genetic_Algorithm:
         """
         self.population = [] # Reset population
         for i in range (self.population_size):
-            schedule = Schedule.generate_random_schedule(self.registry)
+            schedule = Schedule.random_initial_assignment(self.registry)
             self.population.append(schedule)
-        print("Successfully initialized population")
+        # print("Successfully initialized population")
         schedule.display(self.registry)
         return self.population
 
@@ -182,7 +184,7 @@ class Genetic_Algorithm:
             import copy
             offspring.append(copy.deepcopy(self.parents[-1]))
 
-        print(f"Generated {len(offspring)} offspring")
+        # print(f"Generated {len(offspring)} offspring")
         return offspring
 
     def _validate_schedule_credits(self, schedule: Schedule):
@@ -276,7 +278,7 @@ class Genetic_Algorithm:
             else:
                 mutated.append(schedule)  # Keep original
         
-        print(f"Mutation: {mutation_count}/{len(offspring)} improved")
+        # print(f"Mutation: {mutation_count}/{len(offspring)} improved")
         return mutated
 
 
@@ -299,81 +301,65 @@ class Genetic_Algorithm:
 # Stop condition: max_generations/no significant improvement in fitness function/reached goal.
 
 # Step 6: Main GA Loop
-    # Step 6: Main GA Loop
-    def run(self, mutation_rate: float = 0.1) -> Schedule:
+    def run(self, mutation_rate: float = 0.1) -> Tuple[Optional[Schedule], Optional[Schedule], float, List[float], int, float]:
         """
-        Run the genetic algorithm main loop.
-        
+        Executes the genetic algorithm and returns detailed diagnostics.
+
         Args:
-            mutation_rate: Probability of mutation (default: 0.1)
-        
+            mutation_rate: The probability of a mutation for each schedule.
+
         Returns:
-            Best schedule found
+            A tuple containing:
+            - initial_best_schedule: The best schedule from the first generation.
+            - global_best_schedule: The best schedule found across all generations.
+            - global_best_score: The fitness score of the best schedule.
+            - score_history: A list of the best score at each generation.
+            - generations_run: The total number of generations executed.
+            - duration: The total execution time in seconds.
         """
-        print("=" * 70)
-        print("GENETIC ALGORITHM - COURSE SCHEDULING")
-        print("=" * 70)
-        print(f"Population size: {self.population_size}")
-        print(f"Max iterations: {self.max_iteration}")
-        print(f"Mutation rate: {mutation_rate}")
-        print()
-        
-        # Step 1: Initialize population
+        start_time = time.time()
+
+        # Step 1: Initialize Population
         self.init_population()
+        if not self.population:
+            return None, None, float('inf'), [], 0, time.time() - start_time
+            
+        initial_best_schedule, initial_best_fitness = self.get_best_schedule(self.population)
         
-        # Get initial best
-        best_ever_schedule, best_ever_fitness = self.get_best_schedule(self.population)
-        print(f"Initial best fitness: {best_ever_fitness:.2f}")
-        print()
-        
-        # Main evolution loop
+        best_ever_schedule = initial_best_schedule
+        best_ever_fitness = initial_best_fitness
+        score_history = [initial_best_fitness]
+        generations_run = 0
+
+        # Step 2: Main Evolution Loop
         for generation in range(self.max_iteration):
-            print(f"--- Generation {generation + 1}/{self.max_iteration} ---")
+            generations_run += 1
             
-            # Step 2: Parent selection
             self.parents = self.tournament_selection()
-            print(f"Selected {len(self.parents)} parents")
-            
-            # Step 3: Crossover
             offspring = self.crossover_population()
-            print(f"Generated {len(offspring)} offspring")
-            
-            # Step 4: Mutation
             offspring = self.mutate_population(offspring, mutation_rate)
-            
-            # Step 5: Replace population with offspring
             self.population = offspring
             
-            # Evaluate current generation
             current_best_schedule, current_best_fitness = self.get_best_schedule(self.population)
             
-            # Track best ever found
             if current_best_fitness < best_ever_fitness:
-                improvement = best_ever_fitness - current_best_fitness
                 best_ever_fitness = current_best_fitness
                 best_ever_schedule = current_best_schedule
-                print(f"NEW BEST! Fitness: {best_ever_fitness:.2f} (improved by {improvement:.2f})")
-            else:
-                print(f"Current best: {current_best_fitness:.2f} | Best ever: {best_ever_fitness:.2f}")
             
-            # Check stopping condition: optimal solution (0 conflicts)
+            score_history.append(best_ever_fitness)
+            
             if best_ever_fitness == 0:
-                print()
-                print("=" * 70)
-                print("OPTIMAL SOLUTION FOUND!")
-                print("=" * 70)
-                print(f"Generation: {generation + 1}")
-                print(f"Final fitness: {best_ever_fitness:.2f} (0 conflicts)")
-                return best_ever_schedule
-            
-            print()
+                break
         
-        # Max iterations reached
-        print("=" * 70)
-        print("GENETIC ALGORITHM COMPLETE")
-        print("=" * 70)
-        print(f"Best fitness achieved: {best_ever_fitness:.2f}")
-        print(f"Total generations: {self.max_iteration}")
-        print(f"Final conflicts: {best_ever_fitness:.0f}")
+        # Step 3: Finalize and Return Results
+        end_time = time.time()
+        duration = end_time - start_time
         
-        return best_ever_schedule
+        return (
+            initial_best_schedule, 
+            best_ever_schedule, 
+            best_ever_fitness, 
+            score_history, 
+            generations_run, 
+            duration
+        )

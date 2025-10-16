@@ -10,14 +10,15 @@ from algorithm.hill_climbing_stochastic import StochasticHillClimbing
 from algorithm.stimulated_annealing import SimulatedAnnealing
 from algorithm.hill_climbing_sideways import HillClimbingSidewaysMove
 from algorithm.hill_climbing_random_restart import RandomRestartHillClimbing
+from algorithm.genetic_algorithm import Genetic_Algorithm
 
 def main():
     print("="*60)
-    print("COURSE SCHEDULING OPTIMIZATION USING HILL CLIMBING ALGORITHMS")
+    print("COURSE SCHEDULING OPTIMIZATION")
     print("="*60)
 
     # Load data from JSON
-    file_path = "data/input/large_test.json"
+    file_path = "data/input/big.json"
     print(f"\nLoading data from: {file_path}")
 
     reg = Registry()
@@ -34,7 +35,8 @@ def main():
         2: ("Hill Climbing Stochastic", StochasticHillClimbing),
         3: ("Simulated Annealing", SimulatedAnnealing),
         4: ("Hill Climbing with Sideways Move", HillClimbingSidewaysMove),
-        5: ("Random Restart Hill Climbing", RandomRestartHillClimbing)
+        5: ("Random Restart Hill Climbing", RandomRestartHillClimbing),
+        6: ("Genetic Algorithm", Genetic_Algorithm)
     }
 
     print("\nAvailable Algorithms:")
@@ -43,11 +45,11 @@ def main():
 
     while True:
         try:
-            choice = int(input("\nSelect algorithm (1-5): "))
+            choice = int(input("\nSelect algorithm (1-6): "))
             if choice in algorithms:
                 break
             else:
-                print("Invalid choice. Please select 1-5.")
+                print("Invalid choice. Please select 1-6.")
         except ValueError:
             print("Please enter a number.")
 
@@ -67,10 +69,13 @@ def main():
         hc = algorithm_class(reg, max_consecutive_sideways=5, max_total_sideways=20, max_iterations=1000)
     elif choice == 5:  # Random Restart
         hc = algorithm_class(reg, max_restarts=10, max_iterations_per_restart=100)
+    elif choice == 6:  # Genetic Algorithm
+        hc = algorithm_class(reg, population_size=50, max_iteration=100)
 
-    # Generate initial random schedule
-    initial_schedule = Schedule.generate_random_schedule(reg)
-    initial_score = objective.evaluate(initial_schedule)
+    # Generate initial random schedule (not needed for GA)
+    if choice != 6:
+        initial_schedule = Schedule.generate_random_schedule(reg)
+        initial_score = objective.evaluate(initial_schedule)
 
     # Run the algorithm
     print("\n" + "="*60)
@@ -147,6 +152,24 @@ def main():
         print(f"\nTotal Restarts: {total_restarts}")
         print(f"\nIterations per Restart: {iterations_list}")
 
+    elif choice == 6:  # Genetic Algorithm
+        initial_schedule, best_schedule, best_score, history, generations_run, duration = hc.run(mutation_rate=0.15)
+        
+        # Display initial state
+        print("\nInitial Best Schedule:")
+        initial_schedule.display(reg)
+        plot_schedule_visualization(initial_schedule, f'{algorithm_name} - Initial Best', reg)
+        
+        # Display final state
+        print("\nFinal Best Schedule:")
+        best_schedule.display(reg)
+        plot_schedule_visualization(best_schedule, f'{algorithm_name} - Final Best', reg)
+        
+        print(f"\nFinal Objective Value: {best_score}")
+        print(f"\nGenerations Run: {generations_run}")
+        print(f"\nSearch Duration: {duration:.4f} seconds")
+        print(f"\nConvergence History: {history[:10]}...")  # Show first 10
+
 
     # Create plot
     print("\n" + "="*60)
@@ -156,7 +179,7 @@ def main():
     plt.figure(figsize=(10, 6))
     plt.plot(range(len(history)), history, 'b-o', linewidth=2, markersize=4, label='Objective Function')
 
-    plt.xlabel('Iteration', fontsize=12)
+    plt.xlabel('Iteration' if choice != 6 else 'Generation', fontsize=12)
     plt.ylabel('Objective Function Value (Conflicts)', fontsize=12)
     plt.title(f'{algorithm_name} - Optimization Progress', fontsize=14, fontweight='bold')
     plt.grid(True, alpha=0.3)
@@ -176,6 +199,8 @@ def main():
         info_text += f'\nRestarts: {total_restarts}\nIterations/Restart: {iterations_list}'
     elif choice == 3:  # Simulated Annealing
         info_text += f'\nStuck: {stuck_count}'
+    elif choice == 6:  # Genetic Algorithm
+        info_text += f'\nGenerations: {generations_run}\nPopulation: 50'
 
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
     plt.text(0.05, 0.95, info_text, transform=plt.gca().transAxes, fontsize=10,
