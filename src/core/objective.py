@@ -17,10 +17,6 @@ class ScheduleObjective:
         return self.calculate_student_time_conflicts(schedule)
     
     def calculate_student_time_conflicts(self, schedule: Schedule) -> float:
-        """
-        Count time conflicts for students.
-        Example: If student has 2 meetings at same hour → +2 conflicts
-        """
         total_conflicts = 0
         student_timeslot_usage: Dict[Tuple, Dict[str, int]] = {}
         

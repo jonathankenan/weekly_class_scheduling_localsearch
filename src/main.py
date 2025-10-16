@@ -153,8 +153,16 @@ def main():
     print("GENERATING PLOT")
     print("="*60)
 
+    # Handle history for Random Restart (list of lists)
     plt.figure(figsize=(10, 6))
-    plt.plot(range(len(history)), history, 'b-o', linewidth=2, markersize=4, label='Objective Function')
+    if choice == 5 and isinstance(history, list) and history:
+        # Plot each restart as a separate line
+        for i, hist in enumerate(history):
+            if hist:  # Ensure hist is not empty
+                plt.plot(range(len(hist)), hist, 'o-', linewidth=2, markersize=4, label=f'Restart {i+1}')
+    else:
+        plot_history = history
+        plt.plot(range(len(plot_history)), plot_history, 'b-o', linewidth=2, markersize=4, label='Objective Function')
 
     plt.xlabel('Iteration', fontsize=12)
     plt.ylabel('Objective Function Value (Conflicts)', fontsize=12)
@@ -162,13 +170,25 @@ def main():
     plt.grid(True, alpha=0.3)
     plt.legend(fontsize=10)
 
-    # Add annotations
-    plt.annotate(f'Start: {history[0]}', xy=(0, history[0]), xytext=(10, 10),
-                textcoords='offset points', bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.7),
-                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
-    plt.annotate(f'End: {history[-1]}', xy=(len(history)-1, history[-1]), xytext=(10, -30),
-                textcoords='offset points', bbox=dict(boxstyle='round,pad=0.5', fc='lightblue', alpha=0.7),
-                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
+    # Add annotations (simplified for multiple lines)
+    if choice == 5 and isinstance(history, list) and history:
+        # Annotate start and end for each restart
+        for i, hist in enumerate(history):
+            if hist:
+                plt.annotate(f'Start R{i+1}: {hist[0]}', xy=(0, hist[0]), xytext=(10 + i*50, 10 + i*10),
+                            textcoords='offset points', bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.7),
+                            arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
+                plt.annotate(f'End R{i+1}: {hist[-1]}', xy=(len(hist)-1, hist[-1]), xytext=(10 + i*50, -30 - i*10),
+                            textcoords='offset points', bbox=dict(boxstyle='round,pad=0.5', fc='lightblue', alpha=0.7),
+                            arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
+    else:
+        if plot_history:
+            plt.annotate(f'Start: {plot_history[0]}', xy=(0, plot_history[0]), xytext=(10, 10),
+                        textcoords='offset points', bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.7),
+                        arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
+            plt.annotate(f'End: {plot_history[-1]}', xy=(len(plot_history)-1, plot_history[-1]), xytext=(10, -30),
+                        textcoords='offset points', bbox=dict(boxstyle='round,pad=0.5', fc='lightblue', alpha=0.7),
+                        arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
 
     # Add info box
     info_text = f'Final Score: {best_score}\nDuration: {duration:.4f}s'
@@ -222,21 +242,20 @@ def plot_schedule_visualization(schedule, title, registry, save_path=None):
         row_data = []
         for day in days:
             if (day, hour) in schedule.occupancy:
-                course_codes = set()
-                for mid in schedule.occupancy[(day, hour)].values():
+                room_contents = []
+                for room in schedule.classroom_codes:
+                    mid = schedule.occupancy[(day, hour)].get(room)
                     if mid is not None:
-                        meeting = registry.get_meeting(mid)
-                        course_codes.add(meeting.course_code)
-                
-                if course_codes:
-                    codes_list = sorted(list(course_codes))
-                    cell_content = "\n".join(codes_list)  # Multi-line for table
+                        course_code = registry.get_meeting(mid).course_code
+                        room_contents.append(f"{room}:{course_code}")
+                if room_contents:
+                    slot_content = "\n".join(room_contents)  # Multi-line for table
                 else:
-                    cell_content = "-"
+                    slot_content = "-"
             else:
-                cell_content = "-"
+                slot_content = "-"
             
-            row_data.append(cell_content)
+            row_data.append(slot_content)
         data.append(row_data)
     
     # Create figure and table
