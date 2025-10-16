@@ -252,6 +252,45 @@ class Schedule:
         """
         return [(mid, d, h, r) for mid, (d, h, r) in self.where_is.items()]
 
+    def print_schedule_table(self, registry: 'Registry') -> None:
+        """
+        Print a visual table representation of the schedule.
+        Shows days as columns, hours as rows, and course codes in each slot.
+        
+        Args:
+            registry: Registry instance to access meeting details
+        """
+        print("\n" + "="*100)
+        print("SCHEDULE TABLE")
+        print("="*100)
+        
+        # Header: Days
+        header = "Hour |"
+        for day in self.days:
+            header += f" {day.name:<18} |"
+        print(header)
+        print("-" * len(header))
+        
+        # Rows: Hours
+        for hour in self.hours:
+            row = f"{hour:4} |"
+            for day in self.days:
+                slot_content = ""
+                room_contents = []
+                for room in self.classroom_codes:
+                    mid = self.occupancy[(day, hour)].get(room)
+                    if mid is not None:
+                        course_code = registry.meetings[mid].course_code
+                        room_contents.append(f"{room}:{course_code}")
+                if room_contents:
+                    slot_content = ", ".join(room_contents)
+                else:
+                    slot_content = "Empty"
+                row += f" {slot_content:<18} |"
+            print(row)
+        
+        print("="*100)
+
     # ---------- Static Factory Methods ----------
     @staticmethod
     def generate_random_schedule(registry: 'Registry') -> 'Schedule':
@@ -266,7 +305,7 @@ class Schedule:
             Schedule with randomly placed meetings
         """
         # Define schedule dimensions
-        days = [DAY.MONDAY, DAY.TUESDAY, DAY.WEDNESDAY, DAY.THURSDAY, DAY.FRIDAY]
+        days = list(DAY)
         hours = list(range(7, 18))  # 7 AM to 5 PM
         classroom_codes = list(registry.classrooms.keys())
         
@@ -299,5 +338,34 @@ class Schedule:
                     placed = True
                 
                 attempts += 1
+        
+        return schedule
+    
+    @staticmethod
+    def random_initial_assignment(registry: 'Registry') -> 'Schedule':
+        """
+        Generate a completely random initial schedule without constraint checking.
+        Places all meetings randomly into available positions.
+        This can create invalid schedules with conflicts, useful for testing optimization algorithms.
+        
+        Args:
+            registry: Registry containing meetings, classrooms, and constraints
+            
+        Returns:
+            Schedule with all meetings randomly placed (may be invalid)
+        """
+        # Define schedule dimensions
+        days = list(DAY)
+        hours = list(range(7, 18))  # 7 AM to 5 PM
+        classroom_codes = list(registry.classrooms.keys())
+        
+        schedule = Schedule(days, hours, classroom_codes)
+        meetings = list(registry.meetings.keys())
+        free_positions = schedule.all_free_positions()
+        random.shuffle(free_positions)
+        
+        for mid, pos in zip(meetings, free_positions):
+            d, h, r = pos
+            schedule.place(mid, d, h, r)
         
         return schedule
