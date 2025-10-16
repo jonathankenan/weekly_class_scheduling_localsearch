@@ -1,122 +1,269 @@
-from utils.input_parser import load_json
-
-file_path = (
-    "C:/Users/Mahesa/OneDrive/ITB/Coding/College/Academic/IF/"
-    "Smt-5/AI/tugas/tubes/Tubes1_AI_ngermnkibols/data/input/example.json"
-)
-
-courses, classrooms, students = load_json(file_path)
-
-print(f"Total courses: {len(courses)}")
-print(f"Total classrooms: {len(classrooms)}")
-print(f"Total students: {len(students)}")
-
-print("\nSample Course:")
-for c in list(courses.values())[:1]:
-    print(c)
-
-print("\nSample Classroom:")
-for r in list(classrooms.values())[:1]:
-    print(r)
-
-print("\nSample Student:")
-for s in list(students.values())[:1]:
-    print(s)
-
-# Test Registry
+import sys
+import matplotlib.pyplot as plt
+import numpy as np
 from core.registry import Registry
-
-# 1️⃣  Init registry and load data
-reg = Registry()
-reg.load_from_json(file_path)
-
-# 2️⃣  Print summary
-print(f"\nCourses: {len(reg.courses)}")
-print(f"Classrooms: {len(reg.classrooms)}")
-print(f"Students: {len(reg.students)}")
-print(f"Meetings generated: {len(reg.meetings)}")
-
-# 3️⃣  Spot check: 1 student’s meetings
-sample_nim = list(reg.students.keys())[0]
-print(f"\nMeetings of student {sample_nim}: {reg.meetings_of_student[sample_nim]}")
-
-# 4️⃣  Spot check: 1 meeting’s legal classrooms
-mid = list(reg.meetings.keys())[0]
-print(f"Legal classrooms for meeting {mid}: {reg.legal_classrooms_by_meeting[mid]}")
-
-# 5️⃣  Spot check: 1 meeting’s students
-print(f"Students of meeting {mid}: {reg.students_of_meeting[mid]}")
-
-# ==== SCHEDULE TESTS ====
 from core.schedule import Schedule
-from core.models import DAY  # ganti sesuai lokasi enum DAY kamu
+from core.objective import ScheduleObjective
+from core.models import DAY
+from algorithm.hill_climbing_steepest_ascent import SteepestAscentHillClimbing
+from algorithm.hill_climbing_stochastic import StochasticHillClimbing
+from algorithm.stimulated_annealing import SimulatedAnnealing
+from algorithm.hill_climbing_sideways import HillClimbingSidewaysMove
+from algorithm.hill_climbing_random_restart import RandomRestartHillClimbing
 
-# domain kecil biar mudah diverifikasi
-days = [DAY.MONDAY, DAY.TUESDAY]
-hours = [7, 8, 9]
-classroom_codes = list(reg.classrooms.keys())  # dari Registry yang sudah kamu buat
+def main():
+    print("="*60)
+    print("COURSE SCHEDULING OPTIMIZATION USING HILL CLIMBING ALGORITHMS")
+    print("="*60)
 
-sched = Schedule(days, hours, classroom_codes)
+    # Load data from JSON
+    file_path = "data/input/large_test.json"
+    print(f"\nLoading data from: {file_path}")
 
-# --- 1) Inisialisasi occupancy ---
-total_positions = len(days) * len(hours) * len(classroom_codes)
-print("\n[SCHEDULE] total_positions:", total_positions)
-print("[SCHEDULE] sample cell (MONDAY,7):", sched.occupancy[(DAY.MONDAY, 7)])
+    reg = Registry()
+    reg.load_from_json(file_path)
 
-# --- 2) place + is_empty + who_at + get_position ---
-m1 = list(reg.meetings.keys())[0]  # ambil meeting_id pertama
-legal_rooms_m1 = reg.legal_classrooms_by_meeting[m1]
-room1 = legal_rooms_m1[0] if legal_rooms_m1 else classroom_codes[0]
+    print(f"Courses: {len(reg.courses)}")
+    print(f"Classrooms: {len(reg.classrooms)}")
+    print(f"Students: {len(reg.students)}")
+    print(f"Meetings: {len(reg.meetings)}")
 
-ok_place = sched.place(m1, DAY.MONDAY, 7, room1)
-print("\nPlace m1:", ok_place)
-print("who_at(MONDAY,7,room1):", sched.who_at(DAY.MONDAY, 7, room1))
-print("get_position(m1):", sched.get_position(m1))
-print("is_empty(MONDAY,7,room1):", sched.is_empty(DAY.MONDAY, 7, room1))
+    # Algorithm selection menu
+    algorithms = {
+        1: ("Hill Climbing Steepest Ascent", SteepestAscentHillClimbing),
+        2: ("Hill Climbing Stochastic", StochasticHillClimbing),
+        3: ("Simulated Annealing", SimulatedAnnealing),
+        4: ("Hill Climbing with Sideways Move", HillClimbingSidewaysMove),
+        5: ("Random Restart Hill Climbing", RandomRestartHillClimbing)
+    }
 
-# --- 3) place lagi di posisi lain (auto-relocate dari posisi lama) ---
-ok_place_reloc = sched.place(m1, DAY.TUESDAY, 8, room1)  # harus pindah dari (MONDAY,7,room1)
-print("\nRelocate m1 to (TUESDAY,8,room1):", ok_place_reloc)
-print("who_at(MONDAY,7,room1) after relocate:", sched.who_at(DAY.MONDAY, 7, room1))
-print("get_position(m1) after relocate:", sched.get_position(m1))
+    print("\nAvailable Algorithms:")
+    for key, (name, _) in algorithms.items():
+        print(f"{key}. {name}")
 
-# --- 4) place m2, lalu move m2 ---
-m2 = list(reg.meetings.keys())[1]
-legal_rooms_m2 = reg.legal_classrooms_by_meeting[m2]
-room2 = legal_rooms_m2[0] if legal_rooms_m2 else classroom_codes[-1]
+    while True:
+        try:
+            choice = int(input("\nSelect algorithm (1-5): "))
+            if choice in algorithms:
+                break
+            else:
+                print("Invalid choice. Please select 1-5.")
+        except ValueError:
+            print("Please enter a number.")
 
-ok_place2 = sched.place(m2, DAY.MONDAY, 9, room2)
-print("\nPlace m2:", ok_place2, "at (MONDAY,9,", room2, ")")
-print("get_position(m2):", sched.get_position(m2))
+    algorithm_name, algorithm_class = algorithms[choice]
+    print(f"\nSelected: {algorithm_name}")
 
-# move m2 ke slot kosong
-ok_move = sched.move((DAY.MONDAY, 9, room2), (DAY.MONDAY, 7, room2))
-print("Move m2 to (MONDAY,7,", room2, "):", ok_move)
-print("who_at(MONDAY,7,room2):", sched.who_at(DAY.MONDAY, 7, room2))
-print("get_position(m2) after move:", sched.get_position(m2))
+    # Initialize algorithm with default parameters
+    objective = ScheduleObjective(reg)
 
-# --- 5) swap antara posisi m1 dan m2 ---
-pos_m1 = sched.get_position(m1)  # (TUESDAY,8,room1)
-pos_m2 = sched.get_position(m2)  # (MONDAY,7,room2)
-ok_swap = sched.swap(pos_m1, pos_m2)
-print("\nSwap m1<->m2:", ok_swap)
-print("get_position(m1) after swap:", sched.get_position(m1))
-print("get_position(m2) after swap:", sched.get_position(m2))
+    if choice == 1:  # Steepest Ascent
+        hc = algorithm_class(reg, max_iterations=1000)
+    elif choice == 2:  # Stochastic
+        hc = algorithm_class(reg, max_iterations=1000)
+    elif choice == 3:  # Simulated Annealing
+        hc = algorithm_class(reg, initial_temp=1000, cooling_rate=0.95, max_iterations=1000)
+    elif choice == 4:  # Sideways
+        hc = algorithm_class(reg, max_consecutive_sideways=5, max_total_sideways=20, max_iterations=1000)
+    elif choice == 5:  # Random Restart
+        hc = algorithm_class(reg, max_restarts=10, max_iterations_per_restart=100)
 
-# --- 6) remove ---
-pos_m1_after = sched.get_position(m1)
-removed_mid = sched.remove(*pos_m1_after)  # unpack (day,hour,room)
-print("\nRemoved mid:", removed_mid)
-print("who_at(pos_m1_after) now:", sched.who_at(pos_m1_after[0], pos_m1_after[1], pos_m1_after[2]))
-print("get_position(m1) after remove:", sched.get_position(m1))
+    # Generate initial random schedule
+    initial_schedule = Schedule.generate_random_schedule(reg)
+    initial_score = objective.evaluate(initial_schedule)
 
-# --- 7) all_free_positions & iter_assignments sanity ---
-free_positions = sched.all_free_positions()
-assignments = sched.iter_assignments()
-print("\nfree_positions count:", len(free_positions), "/", total_positions)
-print("assignments:", assignments)
+    # Run the algorithm
+    print("\n" + "="*60)
+    print(f"RUNNING {algorithm_name.upper()}")
+    print("="*60)
 
-# --- 8) Assertions untuk sanity check (boleh kamu comment kalau nggak mau assert) ---
-assert sched.get_position(m1) is None, "m1 harus sudah terhapus dari jadwal"
-assert all(len(row) == len(classroom_codes) for row in [sched.occupancy[(d, h)] for d in days for h in hours])
-assert len(assignments) >= 1, "minimal m2 masih ditempatkan"
+    if choice in [1, 2]:  # Steepest Ascent, Stochastic
+        initial_schedule, best_schedule, best_score, history, duration, total_iterations = hc.run()
+        
+        # Display initial state
+        print("\nInitial Schedule Table:")
+        initial_schedule.print_schedule_table(reg)
+        plot_schedule_visualization(initial_schedule, f'{algorithm_name} - Initial Schedule', reg)
+        
+        # Display final state
+        print("\nFinal Schedule Table:")
+        best_schedule.print_schedule_table(reg)
+        plot_schedule_visualization(best_schedule, f'{algorithm_name} - Final Schedule', reg)
+        print(f"\nFinal Objective Value: {best_score}")
+        print(f"\nPlot Score: {history}")
+        print(f"\nSearch Duration: {duration:.4f} seconds")
+        print(f"\nTotal Iterations: {total_iterations}")
+
+    elif choice == 3:  # Simulated Annealing
+        initial_schedule, best_schedule, best_score, history, acceptance_history, stuck_count, duration = hc.run()
+        
+        # Display initial state
+        print("\nInitial Schedule Table:")
+        initial_schedule.print_schedule_table(reg)
+        plot_schedule_visualization(initial_schedule, f'{algorithm_name} - Initial Schedule', reg)
+        
+        # Display final state
+        print("\nFinal Schedule Table:")
+        best_schedule.print_schedule_table(reg)
+        plot_schedule_visualization(best_schedule, f'{algorithm_name} - Final Schedule', reg)
+        print(f"\nFinal Objective Value: {best_score}")
+        print(f"\nPlot Score: {history}")
+        print(f"\nPlot Acceptance: {acceptance_history}")
+        print(f"\nSearch Duration: {duration:.4f} seconds")
+        print(f"Stuck Frequency: {stuck_count}")
+
+    elif choice == 4:  # Sideways
+        initial_schedule, best_schedule, best_score, history, duration, total_iterations = hc.run()
+        
+        # Display initial state
+        print("\nInitial Schedule Table:")
+        initial_schedule.print_schedule_table(reg)
+        plot_schedule_visualization(initial_schedule, f'{algorithm_name} - Initial Schedule', reg)
+        
+        # Display final state
+        print("\nFinal Schedule Table:")
+        best_schedule.print_schedule_table(reg)
+        plot_schedule_visualization(best_schedule, f'{algorithm_name} - Final Schedule', reg)
+        print(f"\nFinal Objective Value: {best_score}")
+        print(f"\nPlot Score: {history}")
+        print(f"\nSearch Duration: {duration:.4f} seconds")
+        print(f"\nTotal Iterations: {total_iterations}")
+
+    elif choice == 5:  # Random Restart
+        initial_schedule, best_schedule, best_score, history, total_restarts, duration, iterations_list = hc.run()
+        
+        # Display initial state
+        print("\nInitial Schedule Table:")
+        initial_schedule.print_schedule_table(reg)
+        plot_schedule_visualization(initial_schedule, f'{algorithm_name} - Initial Schedule', reg)
+        
+        # Display final state
+        print("\nFinal Schedule Table:")
+        best_schedule.print_schedule_table(reg)
+        plot_schedule_visualization(best_schedule, f'{algorithm_name} - Final Schedule', reg)
+        print(f"\nFinal Objective Value: {best_score}")
+        print(f"\nPlot Score: {history}")
+        print(f"\nSearch Duration: {duration:.4f} seconds")
+        print(f"\nTotal Restarts: {total_restarts}")
+        print(f"\nIterations per Restart: {iterations_list}")
+
+
+    # Create plot
+    print("\n" + "="*60)
+    print("GENERATING PLOT")
+    print("="*60)
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(len(history)), history, 'b-o', linewidth=2, markersize=4, label='Objective Function')
+
+    plt.xlabel('Iteration', fontsize=12)
+    plt.ylabel('Objective Function Value (Conflicts)', fontsize=12)
+    plt.title(f'{algorithm_name} - Optimization Progress', fontsize=14, fontweight='bold')
+    plt.grid(True, alpha=0.3)
+    plt.legend(fontsize=10)
+
+    # Add annotations
+    plt.annotate(f'Start: {history[0]}', xy=(0, history[0]), xytext=(10, 10),
+                textcoords='offset points', bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.7),
+                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
+    plt.annotate(f'End: {history[-1]}', xy=(len(history)-1, history[-1]), xytext=(10, -30),
+                textcoords='offset points', bbox=dict(boxstyle='round,pad=0.5', fc='lightblue', alpha=0.7),
+                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
+
+    # Add info box
+    info_text = f'Final Score: {best_score}\nDuration: {duration:.4f}s'
+    if choice == 5:  # Random Restart
+        info_text += f'\nRestarts: {total_restarts}\nIterations/Restart: {iterations_list}'
+    elif choice == 3:  # Simulated Annealing
+        info_text += f'\nStuck: {stuck_count}'
+
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    plt.text(0.05, 0.95, info_text, transform=plt.gca().transAxes, fontsize=10,
+            verticalalignment='top', bbox=props)
+
+    plt.tight_layout()
+    plot_path = f'data/output/{algorithm_name.lower().replace(" ", "_")}_plot.png'
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    print(f"Plot saved to: {plot_path}")
+
+    # Additional plot for Simulated Annealing
+    if choice == 3:
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(len(acceptance_history)), acceptance_history, 'r-o', linewidth=2, markersize=4, label='Acceptance Probability')
+
+        plt.xlabel('Iteration', fontsize=12)
+        plt.ylabel('Acceptance Probability', fontsize=12)
+        plt.title(f'{algorithm_name} - Acceptance Probability Progress', fontsize=14, fontweight='bold')
+        plt.grid(True, alpha=0.3)
+        plt.legend(fontsize=10)
+
+        plt.tight_layout()
+        acceptance_plot_path = f'data/output/{algorithm_name.lower().replace(" ", "_")}_acceptance_plot.png'
+        plt.savefig(acceptance_plot_path, dpi=300, bbox_inches='tight')
+        print(f"Acceptance plot saved to: {acceptance_plot_path}")
+
+    print("\n" + "="*60)
+    print("OPTIMIZATION COMPLETED")
+    print("="*60)
+
+def plot_schedule_visualization(schedule, title, registry, save_path=None):
+    """
+    Create a matplotlib table visualization showing course codes per time slot.
+    """
+    days = list(DAY)
+    day_labels = [d.name for d in days]
+    hours = list(range(7, 18))
+    
+    # Prepare data for table
+    data = []
+    row_labels = [f"{h}:00" for h in hours]
+    
+    for hour in hours:
+        row_data = []
+        for day in days:
+            if (day, hour) in schedule.occupancy:
+                course_codes = set()
+                for mid in schedule.occupancy[(day, hour)].values():
+                    if mid is not None:
+                        meeting = registry.get_meeting(mid)
+                        course_codes.add(meeting.course_code)
+                
+                if course_codes:
+                    codes_list = sorted(list(course_codes))
+                    cell_content = "\n".join(codes_list)  # Multi-line for table
+                else:
+                    cell_content = "-"
+            else:
+                cell_content = "-"
+            
+            row_data.append(cell_content)
+        data.append(row_data)
+    
+    # Create figure and table
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax.axis('off')
+    
+    table = ax.table(cellText=data, 
+                    rowLabels=row_labels, 
+                    colLabels=day_labels, 
+                    cellLoc='center', 
+                    loc='center',
+                    colWidths=[0.15] * len(day_labels))
+    
+    table.auto_set_font_size(False)
+    table.set_fontsize(7)
+    table.scale(1.5, 2.0)
+    
+    ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
+    
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Schedule visualization saved to: {save_path}")
+    
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
