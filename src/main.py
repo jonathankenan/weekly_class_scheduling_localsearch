@@ -17,12 +17,21 @@ def main():
     print("COURSE SCHEDULING OPTIMIZATION")
     print("="*60)
 
-    # Load data from JSON
-    file_path = "data/input/big.json"
+    # Input JSON filename
+    print("\nAvailable test files: small, medium, big, large_test")
+    json_filename = input("Enter JSON filename (without .json extension, default: big): ").strip()
+    if not json_filename:
+        json_filename = "big"
+    
+    file_path = f"data/input/{json_filename}.json"
     print(f"\nLoading data from: {file_path}")
 
-    reg = Registry()
-    reg.load_from_json(file_path)
+    try:
+        reg = Registry()
+        reg.load_from_json(file_path)
+    except FileNotFoundError:
+        print(f"Error: File '{file_path}' not found!")
+        return
 
     print(f"Courses: {len(reg.courses)}")
     print(f"Classrooms: {len(reg.classrooms)}")
@@ -55,22 +64,73 @@ def main():
 
     algorithm_name, algorithm_class = algorithms[choice]
     print(f"\nSelected: {algorithm_name}")
+    print("\n" + "-"*60)
+    print("ALGORITHM PARAMETERS")
+    print("-"*60)
 
-    # Initialize algorithm with default parameters
+    # Initialize algorithm with user-defined parameters
     objective = ScheduleObjective(reg)
 
     if choice == 1:  # Steepest Ascent
-        hc = algorithm_class(reg, max_iterations=1000)
+        max_iter = input("Max iterations (default: 1000): ").strip()
+        max_iter = int(max_iter) if max_iter else 1000
+        print(f"Running with max_iterations={max_iter}")
+        hc = algorithm_class(reg, max_iterations=max_iter)
+        
     elif choice == 2:  # Stochastic
-        hc = algorithm_class(reg, max_iterations=1000)
+        max_iter = input("Max iterations (default: 1000): ").strip()
+        max_iter = int(max_iter) if max_iter else 1000
+        print(f"Running with max_iterations={max_iter}")
+        hc = algorithm_class(reg, max_iterations=max_iter)
+        
     elif choice == 3:  # Simulated Annealing
-        hc = algorithm_class(reg, initial_temp=1000, cooling_rate=0.95, max_iterations=1000)
+        initial_temp = input("Initial temperature (default: 1000): ").strip()
+        initial_temp = float(initial_temp) if initial_temp else 1000
+        
+        cooling_rate = input("Cooling rate (default: 0.95): ").strip()
+        cooling_rate = float(cooling_rate) if cooling_rate else 0.95
+        
+        max_iter = input("Max iterations (default: 1000): ").strip()
+        max_iter = int(max_iter) if max_iter else 1000
+        
+        print(f"Running with initial_temp={initial_temp}, cooling_rate={cooling_rate}, max_iterations={max_iter}")
+        hc = algorithm_class(reg, initial_temp=initial_temp, cooling_rate=cooling_rate, max_iterations=max_iter)
+        
     elif choice == 4:  # Sideways
-        hc = algorithm_class(reg, max_consecutive_sideways=5, max_total_sideways=20, max_iterations=1000)
+        max_consec = input("Max consecutive sideways moves (default: 5): ").strip()
+        max_consec = int(max_consec) if max_consec else 5
+        
+        max_total = input("Max total sideways moves (default: 20): ").strip()
+        max_total = int(max_total) if max_total else 20
+        
+        max_iter = input("Max iterations (default: 1000): ").strip()
+        max_iter = int(max_iter) if max_iter else 1000
+        
+        print(f"Running with max_consecutive={max_consec}, max_total={max_total}, max_iterations={max_iter}")
+        hc = algorithm_class(reg, max_consecutive_sideways=max_consec, max_total_sideways=max_total, max_iterations=max_iter)
+        
     elif choice == 5:  # Random Restart
-        hc = algorithm_class(reg, max_restarts=10, max_iterations_per_restart=100)
+        max_restarts = input("Max restarts (default: 10): ").strip()
+        max_restarts = int(max_restarts) if max_restarts else 10
+        
+        max_iter_per_restart = input("Max iterations per restart (default: 100): ").strip()
+        max_iter_per_restart = int(max_iter_per_restart) if max_iter_per_restart else 100
+        
+        print(f"Running with max_restarts={max_restarts}, max_iterations_per_restart={max_iter_per_restart}")
+        hc = algorithm_class(reg, max_restarts=max_restarts, max_iterations_per_restart=max_iter_per_restart)
+        
     elif choice == 6:  # Genetic Algorithm
-        hc = algorithm_class(reg, population_size=50, max_iteration=100)
+        pop_size = input("Population size (default: 50): ").strip()
+        pop_size = int(pop_size) if pop_size else 50
+        
+        max_iter = input("Max generations (default: 100): ").strip()
+        max_iter = int(max_iter) if max_iter else 100
+        
+        mut_rate = input("Mutation rate (default: 0.15): ").strip()
+        mut_rate = float(mut_rate) if mut_rate else 0.15
+        
+        print(f"Running with population_size={pop_size}, max_generations={max_iter}, mutation_rate={mut_rate}")
+        hc = algorithm_class(reg, population_size=pop_size, max_iteration=max_iter)
 
     # Generate initial random schedule (not needed for GA)
     if choice != 6:
@@ -153,7 +213,7 @@ def main():
         print(f"\nIterations per Restart: {iterations_list}")
 
     elif choice == 6:  # Genetic Algorithm
-        initial_schedule, best_schedule, best_score, history, generations_run, duration = hc.run(mutation_rate=0.15)
+        initial_schedule, best_schedule, best_score, history, generations_run, duration = hc.run(mutation_rate=mut_rate)
         
         # Display initial state
         print("\nInitial Best Schedule:")
@@ -220,7 +280,7 @@ def main():
     elif choice == 3:  # Simulated Annealing
         info_text += f'\nStuck: {stuck_count}'
     elif choice == 6:  # Genetic Algorithm
-        info_text += f'\nGenerations: {generations_run}\nPopulation: 50'
+        info_text += f'\nGenerations: {generations_run}\nPopulation: {pop_size}'
 
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
     plt.text(0.05, 0.95, info_text, transform=plt.gca().transAxes, fontsize=10,
