@@ -73,8 +73,28 @@ class Genetic_Algorithm:
 # Strategy -> Use one-point crossover. Explore other options
 # One-point crossover func, split by sorted index (day + timeslots).
 # crossover(total_iteration)
+    # In algorithm/genetic_algorithm.py
+
+    def _find_and_place(self, schedule: Schedule, meeting_id: int, preferred_room: str) -> bool:
+        """Helper to find any free spot for a meeting and place it."""
+        legal_rooms = self.registry.legal_classrooms_by_meeting.get(meeting_id, [preferred_room])
+        if not legal_rooms:
+            return False
+            
+        random.shuffle(schedule.days)
+        random.shuffle(schedule.hours)
+        random.shuffle(legal_rooms)
+
+        for day in schedule.days:
+            for hour in schedule.hours:
+                for room in legal_rooms:
+                    if schedule.is_empty(day, hour, room):
+                        schedule.place(meeting_id, day, hour, room)
+                        return True
+        return False # No free spot found
+
     def one_point_crossover(self, parent1: Schedule, parent2: Schedule):
-        # 1) Collect ALL meetings from both parents
+        # 1) Collect ALL meeting IDs from both parents
         all_meeting_ids = set(parent1.where_is.keys()) | set(parent2.where_is.keys())
         
         # Group by course code
@@ -86,7 +106,7 @@ class Genetic_Algorithm:
                 meetings_by_course[course_code] = []
             meetings_by_course[course_code].append(meeting_id)
 
-        # 2) Sort courses
+        # 2) Sort courses for a consistent crossover point
         sorted_courses = sorted(meetings_by_course.keys())
 
         if len(sorted_courses) <= 1:
@@ -96,82 +116,48 @@ class Genetic_Algorithm:
         # 3) Select crossover point
         crossover_point = random.randint(1, len(sorted_courses) - 1)
 
-        # 4) Create children as COPIES of parents
+        # 4) Create children as deep copies of parents
         import copy
         child1 = copy.deepcopy(parent1)
         child2 = copy.deepcopy(parent2)
 
-        # 5) Crossover by SWAPPING courses after crossover point
-        # After crossover point: child1 gets courses from parent2, child2 gets courses from parent1
+        # 5) Crossover by swapping courses after the crossover point
         for i, course_code in enumerate(sorted_courses):
             if i >= crossover_point:
-                meeting_ids = meetings_by_course[course_code]
+                meeting_ids_to_swap = meetings_by_course[course_code]
                 
-                # For each meeting in this course, swap positions between child1 and child2
-                for meeting_id in meeting_ids:
-                    # Get positions from both children
-                    pos1 = child1.get_position(meeting_id)
-                    pos2 = child2.get_position(meeting_id)
-                    
-                    if pos1 and pos2:
-                        # Both meetings exist - swap their positions
-                        day1, hour1, room1 = pos1
-                        day2, hour2, room2 = pos2
-                        
-                        # Remove both meetings
-                        child1.remove(day1, hour1, room1)
-                        child2.remove(day2, hour2, room2)
-                        
-                        # Place in swapped positions
-                        child1.place(meeting_id, day2, hour2, room2)
-                        child2.place(meeting_id, day1, hour1, room1)
-                    elif pos1 and not pos2:
-                        # Only in child1, move to child2
-                        day1, hour1, room1 = pos1
-                        child1.remove(day1, hour1, room1)
-                        # Try to place in child2 at same position if free
-                        if child2.is_empty(day1, hour1, room1):
-                            child2.place(meeting_id, day1, hour1, room1)
-                        else:
-                            # Find free position in child2
-                            legal_rooms = self.registry.legal_classrooms_by_meeting.get(meeting_id, [room1])
-                            placed = False
-                            for day in child2.days:
-                                for hour in child2.hours:
-                                    for room in legal_rooms:
-                                        if child2.is_empty(day, hour, room):
-                                            child2.place(meeting_id, day, hour, room)
-                                            placed = True
-                                            break
-                                    if placed:
-                                        break
-                                if placed:
-                                    break
-                    elif pos2 and not pos1:
-                        # Only in child2, move to child1
-                        day2, hour2, room2 = pos2
-                        child2.remove(day2, hour2, room2)
-                        # Try to place in child1 at same position if free
-                        if child1.is_empty(day2, hour2, room2):
-                            child1.place(meeting_id, day2, hour2, room2)
-                        else:
-                            # Find free position in child1
-                            legal_rooms = self.registry.legal_classrooms_by_meeting.get(meeting_id, [room2])
-                            placed = False
-                            for day in child1.days:
-                                for hour in child1.hours:
-                                    for room in legal_rooms:
-                                        if child1.is_empty(day, hour, room):
-                                            child1.place(meeting_id, day, hour, room)
-                                            placed = True
-                                            break
-                                    if placed:
-                                        break
-                                if placed:
-                                    break
+                # Step A: Clear all meetings for this course from both children
+                # This creates a clean slate to prevent duplicates or lost meetings.
+                for mid in meeting_ids_to_swap:
+                    pos1 = child1.get_position(mid)
+                    if pos1:
+                        child1.remove(*pos1)
+                    pos2 = child2.get_position(mid)
+                    if pos2:
+                        child2.remove(*pos2)
 
+                # Step B: Re-populate from the opposite parent's genes
+                for mid in meeting_ids_to_swap:
+                    # Give child1 the genes from parent2
+                    p2_pos = parent2.get_position(mid)
+                    if p2_pos:
+                        # Try to place at the exact same position
+                        was_placed = child1.place(mid, *p2_pos)
+                        if not was_placed:
+                            # If that spot is taken, find any other free spot
+                            self._find_and_place(child1, mid, p2_pos[2])
+
+                    # Give child2 the genes from parent1
+                    p1_pos = parent1.get_position(mid)
+                    if p1_pos:
+                        # Try to place at the exact same position
+                        was_placed = child2.place(mid, *p1_pos)
+                        if not was_placed:
+                            # If that spot is taken, find any other free spot
+                            self._find_and_place(child2, mid, p1_pos[2])
+                            
         return child1, child2
-
+    
     def crossover_population(self):
         offspring = []
 
