@@ -2,6 +2,7 @@ from core.models import Course, Classroom, Student, ClassMeeting
 from dataclasses import dataclass, field
 from typing import Dict, List
 from utils.input_parser import load_json
+from typing import Optional
 
 @dataclass
 class Registry:
@@ -40,13 +41,21 @@ class Registry:
                     raise ValueError(f"Student {student.nim} references unknown course {code}")
         print("Validation passed.")
 
-    def generate_meetings(self) -> None:
+    def generate_meetings(self, randomize: Optional[bool] = False) -> None:
         """
         Expand each course into ClassMeeting units (1 meeting per credit hour).
         Each course with N credits becomes N separate meetings that need scheduling.
+        Optional paramater 'randomize' to generate randomly ordered ClassMeeting units.
         """
         meeting_id = 0
-        for code in sorted(self.courses.keys()):  # deterministic order for reproducible results
+
+        if randomize:
+            import random
+            course_codes = list(self.courses.keys())
+            random.shuffle(course_codes)
+        else:
+            course_codes = sorted(self.courses.keys()) # deterministic order for reproducible results
+        for code in course_codes: 
             course = self.courses[code]
             # Create one meeting per credit hour
             for i in range(course.credits):

@@ -1,6 +1,10 @@
 from __future__ import annotations
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, List, TYPE_CHECKING
 from core.models import DAY
+import random
+
+if TYPE_CHECKING:
+    from core.registry import Registry
 
 class Schedule:
     """
@@ -247,3 +251,177 @@ class Schedule:
             List of (meeting_id, day, hour, classroom) tuples for all placed meetings
         """
         return [(mid, d, h, r) for mid, (d, h, r) in self.where_is.items()]
+
+    def print_schedule_table(self, registry: 'Registry') -> None:
+        """
+        Print a visual table representation of the schedule.
+        Shows days as columns, hours as rows, and course codes in each slot.
+        
+        Args:
+            registry: Registry instance to access meeting details
+        """
+        print("\n" + "="*100)
+        print("SCHEDULE TABLE")
+        print("="*100)
+        
+        # Header: Days
+        header = "Hour |"
+        for day in self.days:
+            header += f" {day.name:<18} |"
+        print(header)
+        print("-" * len(header))
+        
+        # Rows: Hours
+        for hour in self.hours:
+            row = f"{hour:4} |"
+            for day in self.days:
+                slot_content = ""
+                room_contents = []
+                for room in self.classroom_codes:
+                    mid = self.occupancy[(day, hour)].get(room)
+                    if mid is not None:
+                        course_code = registry.meetings[mid].course_code
+                        room_contents.append(f"{room}:{course_code}")
+                if room_contents:
+                    slot_content = ", ".join(room_contents)
+                else:
+                    slot_content = "Empty"
+                row += f" {slot_content:<18} |"
+            print(row)
+        
+        print("="*100)
+
+    # ---------- Static Factory Methods ----------
+    @staticmethod
+    def generate_random_schedule(registry: 'Registry') -> 'Schedule':
+        """
+        Generate a random initial schedule by placing meetings randomly.
+        Attempts to place all meetings with constraint checking.
+        
+        Args:
+            registry: Registry containing meetings, classrooms, and constraints
+            
+        Returns:
+            Schedule with randomly placed meetings
+        """
+        # Define schedule dimensions
+        days = list(DAY)
+        hours = list(range(7, 18))  # 7 AM to 5 PM
+        classroom_codes = list(registry.classrooms.keys())
+        
+        schedule = Schedule(days, hours, classroom_codes)
+        all_meetings = list(registry.meetings.values())
+        random.shuffle(all_meetings)
+        
+        for meeting in all_meetings:
+            legal_rooms = registry.legal_classrooms_by_meeting.get(meeting.meeting_id, [])
+            if not legal_rooms:
+                continue
+            
+            placed = False
+            attempts = 0
+            max_attempts = 100
+            
+            while not placed and attempts < max_attempts:
+                day = random.choice(days)
+                hour = random.randint(7, 17 - meeting.duration_hours)
+                room = random.choice(legal_rooms)
+                
+                can_place = True
+                for h in range(hour, hour + meeting.duration_hours):
+                    if not schedule.is_empty(day, h, room):
+                        can_place = False
+                        break
+                
+                if can_place:
+                    schedule.place(meeting.meeting_id, day, hour, room)
+                    placed = True
+                
+                attempts += 1
+        
+        return schedule
+    
+# ---------- Visualization Methods ----------
+    def display(self, registry: Optional['Registry'] = None) -> None:
+        """
+        Display the schedule as a formatted timetable grid.
+        
+        Args:
+            registry: Optional Registry to show course names instead of meeting IDs
+        """
+        print("\n" + "=" * 120)
+        print("SCHEDULE VISUALIZATION")
+        print("=" * 120)
+        
+        # Header: Days
+        header = f"{'Hour':<8}"
+        for day in self.days:
+            header += f"| {str(day):<20} "
+        print(header)
+        print("-" * 120)
+        
+        # Rows: Hours
+        for hour in self.hours:
+            row = f"{hour:02d}:00   "
+            
+            for day in self.days:
+                # Get all meetings at this time across all rooms
+                meetings_at_time = []
+                for room in self.classroom_codes:
+                    mid = self.who_at(day, hour, room)
+                    if mid is not None:
+                        if registry:
+                            meeting = registry.meetings[mid]
+                            course_code = meeting.course_code
+                            meetings_at_time.append(f"{course_code}@{room}")
+                        else:
+                            meetings_at_time.append(f"M{mid}@{room}")
+                
+                # Format cell content
+                if meetings_at_time:
+                    cell = ", ".join(meetings_at_time[:2])  # Show max 2 meetings
+                    if len(meetings_at_time) > 2:
+                        cell += f" +{len(meetings_at_time)-2}"
+                else:
+                    cell = "-"
+                
+                row += f"| {cell:<20} "
+            
+            print(row)
+        
+        print("=" * 120)
+        
+        # Summary statistics
+        total_slots = len(self.days) * len(self.hours) * len(self.classroom_codes)
+        occupied_slots = len(self.where_is)
+        print(f"\nSummary: {occupied_slots}/{total_slots} slots occupied ({occupied_slots/total_slots*100:.1f}%)")
+        print(f"Total meetings placed: {occupied_slots}")
+        print()
+    @staticmethod
+    def random_initial_assignment(registry: 'Registry') -> 'Schedule':
+        """
+        Generate a completely random initial schedule without constraint checking.
+        Places all meetings randomly into available positions.
+        This can create invalid schedules with conflicts, useful for testing optimization algorithms.
+        
+        Args:
+            registry: Registry containing meetings, classrooms, and constraints
+            
+        Returns:
+            Schedule with all meetings randomly placed (may be invalid)
+        """
+        # Define schedule dimensions
+        days = list(DAY)
+        hours = list(range(7, 18))  # 7 AM to 5 PM
+        classroom_codes = list(registry.classrooms.keys())
+        
+        schedule = Schedule(days, hours, classroom_codes)
+        meetings = list(registry.meetings.keys())
+        free_positions = schedule.all_free_positions()
+        random.shuffle(free_positions)
+        
+        for mid, pos in zip(meetings, free_positions):
+            d, h, r = pos
+            schedule.place(mid, d, h, r)
+        
+        return schedule
