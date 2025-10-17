@@ -322,7 +322,8 @@ class Genetic_Algorithm:
         self.init_population()
         if not self.population:
             return None, None, float('inf'), [], 0, time.time() - start_time
-            
+        
+        initial_schedule = self.population[0]
         initial_best_schedule, initial_best_fitness = self.get_best_schedule(self.population)
         
         best_ever_schedule = initial_best_schedule
@@ -355,7 +356,7 @@ class Genetic_Algorithm:
         duration = end_time - start_time
         
         return (
-            initial_best_schedule, 
+            initial_schedule, 
             best_ever_schedule, 
             best_ever_fitness, 
             score_history, 

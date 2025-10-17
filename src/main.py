@@ -72,14 +72,14 @@ def main():
     objective = ScheduleObjective(reg)
 
     if choice == 1:  # Steepest Ascent
-        max_iter = input("Max iterations (default: 1000): ").strip()
-        max_iter = int(max_iter) if max_iter else 1000
+        max_iter = input("Max iterations (default: None): ").strip()
+        max_iter = int(max_iter) if max_iter else None
         print(f"Running with max_iterations={max_iter}")
         hc = algorithm_class(reg, max_iterations=max_iter)
         
     elif choice == 2:  # Stochastic
-        max_iter = input("Max iterations (default: 1000): ").strip()
-        max_iter = int(max_iter) if max_iter else 1000
+        max_iter = input("Max iterations (default: None): ").strip()
+        max_iter = int(max_iter) if max_iter else None
         print(f"Running with max_iterations={max_iter}")
         hc = algorithm_class(reg, max_iterations=max_iter)
         
@@ -90,11 +90,14 @@ def main():
         cooling_rate = input("Cooling rate (default: 0.95): ").strip()
         cooling_rate = float(cooling_rate) if cooling_rate else 0.95
         
-        max_iter = input("Max iterations (default: 1000): ").strip()
-        max_iter = int(max_iter) if max_iter else 1000
-        
+        max_iter = input("Max iterations (default: None): ").strip()
+        max_iter = int(max_iter) if max_iter else None
+
+        random_func = input("Probability threshold value (default: None (Random)): ").strip()
+        random_func = float(random_func) if random_func else None
+
         print(f"Running with initial_temp={initial_temp}, cooling_rate={cooling_rate}, max_iterations={max_iter}")
-        hc = algorithm_class(reg, initial_temp=initial_temp, cooling_rate=cooling_rate, max_iterations=max_iter)
+        hc = algorithm_class(reg, initial_temp=initial_temp, cooling_rate=cooling_rate, max_iterations=max_iter, random_func=random_func)
         
     elif choice == 4:  # Sideways
         max_consec = input("Max consecutive sideways moves (default: 5): ").strip()
@@ -103,8 +106,8 @@ def main():
         max_total = input("Max total sideways moves (default: 20): ").strip()
         max_total = int(max_total) if max_total else 20
         
-        max_iter = input("Max iterations (default: 1000): ").strip()
-        max_iter = int(max_iter) if max_iter else 1000
+        max_iter = input("Max iterations (default: None): ").strip()
+        max_iter = int(max_iter) if max_iter else None
         
         print(f"Running with max_consecutive={max_consec}, max_total={max_total}, max_iterations={max_iter}")
         hc = algorithm_class(reg, max_consecutive_sideways=max_consec, max_total_sideways=max_total, max_iterations=max_iter)
@@ -113,8 +116,8 @@ def main():
         max_restarts = input("Max restarts (default: 10): ").strip()
         max_restarts = int(max_restarts) if max_restarts else 10
         
-        max_iter_per_restart = input("Max iterations per restart (default: 100): ").strip()
-        max_iter_per_restart = int(max_iter_per_restart) if max_iter_per_restart else 100
+        max_iter_per_restart = input("Max iterations per restart (default: None): ").strip()
+        max_iter_per_restart = int(max_iter_per_restart) if max_iter_per_restart else None
         
         print(f"Running with max_restarts={max_restarts}, max_iterations_per_restart={max_iter_per_restart}")
         hc = algorithm_class(reg, max_restarts=max_restarts, max_iterations_per_restart=max_iter_per_restart)
@@ -218,7 +221,7 @@ def main():
         # Display initial state
         print("\nInitial Best Schedule:")
         initial_schedule.display(reg)
-        plot_schedule_visualization(initial_schedule, f'{algorithm_name} - Initial Best', reg)
+        plot_schedule_visualization(initial_schedule, f'{algorithm_name} - Initial Schedule', reg)
         
         # Display final state
         print("\nFinal Best Schedule:")
