@@ -30,7 +30,6 @@ class Genetic_Algorithm:
         return self.population
 
 # Step 2: Choose Parents
-# Strategy -> use probability function. Evaluate each individual with the fitness function/ObjFunc
 # Choose a total of [total_population] parents.
 
     def tournament_selection(self, tournament_size: Optional[int] = None):
@@ -72,9 +71,7 @@ class Genetic_Algorithm:
         return self.parents
 
 # Step 3: Crossover (Recombination)
-# Strategy -> Use one-point crossover. Explore other options
 # One-point crossover func, split by sorted index (day + timeslots).
-# crossover(total_iteration)
 
     def _find_and_place(self, schedule: Schedule, meeting_id: int, preferred_room: str) -> bool:
         """Helper to find any free spot for a meeting and place it."""
@@ -127,7 +124,7 @@ class Genetic_Algorithm:
             if i >= crossover_point:
                 meeting_ids_to_swap = meetings_by_course[course_code]
                 
-                # Step A: Clear all meetings for this course from both children
+                # Clear all meetings for this course from both children
                 # This creates a clean slate to prevent duplicates or lost meetings.
                 for mid in meeting_ids_to_swap:
                     pos1 = child1.get_position(mid)
@@ -137,7 +134,7 @@ class Genetic_Algorithm:
                     if pos2:
                         child2.remove(*pos2)
 
-                # Step B: Re-populate from the opposite parent's genes
+                # Re populate from the opposite parent's genes
                 for mid in meeting_ids_to_swap:
                     # Give child1 the genes from parent2
                     p2_pos = parent2.get_position(mid)
@@ -183,7 +180,6 @@ class Genetic_Algorithm:
             import copy
             offspring.append(copy.deepcopy(self.parents[-1]))
 
-        # print(f"Generated {len(offspring)} offspring")
         return offspring
 
     def _validate_schedule_credits(self, schedule: Schedule):
@@ -277,7 +273,6 @@ class Genetic_Algorithm:
             else:
                 mutated.append(schedule)  # Keep original
         
-        # print(f"Mutation: {mutation_count}/{len(offspring)} improved")
         return mutated
 
 
@@ -293,11 +288,6 @@ class Genetic_Algorithm:
                 best_schedule = schedule
         
         return best_schedule, best_fitness
-
-# Main loop.
-# Use Evaluation func. If already reached optimum global or max_iteration = stop
-
-# Stop condition: max_generations/no significant improvement in fitness function/reached goal.
 
 # Step 6: Main GA Loop
     def run(self, mutation_rate: float = 0.1) -> Tuple[Optional[Schedule], Optional[Schedule], float, List[float], int, float]:

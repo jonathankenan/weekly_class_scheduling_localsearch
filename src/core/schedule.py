@@ -291,56 +291,6 @@ class Schedule:
         
         print("="*100)
 
-    # ---------- Static Factory Methods ----------
-    @staticmethod
-    def generate_random_schedule(registry: 'Registry') -> 'Schedule':
-        """
-        Generate a random initial schedule by placing meetings randomly.
-        Attempts to place all meetings with constraint checking.
-        
-        Args:
-            registry: Registry containing meetings, classrooms, and constraints
-            
-        Returns:
-            Schedule with randomly placed meetings
-        """
-        # Define schedule dimensions
-        days = list(DAY)
-        hours = list(range(7, 18))  # 7 AM to 5 PM
-        classroom_codes = list(registry.classrooms.keys())
-        
-        schedule = Schedule(days, hours, classroom_codes)
-        all_meetings = list(registry.meetings.values())
-        random.shuffle(all_meetings)
-        
-        for meeting in all_meetings:
-            legal_rooms = registry.legal_classrooms_by_meeting.get(meeting.meeting_id, [])
-            if not legal_rooms:
-                continue
-            
-            placed = False
-            attempts = 0
-            max_attempts = 100
-            
-            while not placed and attempts < max_attempts:
-                day = random.choice(days)
-                hour = random.randint(7, 17 - meeting.duration_hours)
-                room = random.choice(legal_rooms)
-                
-                can_place = True
-                for h in range(hour, hour + meeting.duration_hours):
-                    if not schedule.is_empty(day, h, room):
-                        can_place = False
-                        break
-                
-                if can_place:
-                    schedule.place(meeting.meeting_id, day, hour, room)
-                    placed = True
-                
-                attempts += 1
-        
-        return schedule
-    
 # ---------- Visualization Methods ----------
     def display(self, registry: Optional['Registry'] = None) -> None:
         """
@@ -397,6 +347,7 @@ class Schedule:
         print(f"\nSummary: {occupied_slots}/{total_slots} slots occupied ({occupied_slots/total_slots*100:.1f}%)")
         print(f"Total meetings placed: {occupied_slots}")
         print()
+        
     @staticmethod
     def random_initial_assignment(registry: 'Registry') -> 'Schedule':
         """

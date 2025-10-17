@@ -135,10 +135,7 @@ def main():
         print(f"Running with population_size={pop_size}, max_generations={max_iter}, mutation_rate={mut_rate}")
         hc = algorithm_class(reg, population_size=pop_size, max_iteration=max_iter)
 
-    # Generate initial random schedule (not needed for GA)
-    if choice != 6:
-        initial_schedule = Schedule.generate_random_schedule(reg)
-        initial_score = objective.evaluate(initial_schedule)
+
 
     # Run the algorithm
     print("\n" + "="*60)
