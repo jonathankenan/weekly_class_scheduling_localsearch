@@ -75,7 +75,6 @@ class Genetic_Algorithm:
 # Strategy -> Use one-point crossover. Explore other options
 # One-point crossover func, split by sorted index (day + timeslots).
 # crossover(total_iteration)
-    # In algorithm/genetic_algorithm.py
 
     def _find_and_place(self, schedule: Schedule, meeting_id: int, preferred_room: str) -> bool:
         """Helper to find any free spot for a meeting and place it."""
