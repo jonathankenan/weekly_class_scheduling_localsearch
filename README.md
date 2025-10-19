@@ -59,6 +59,10 @@ To apply and evaluate several local search algorithms in solving a real-world op
 ```bash
 cd <project-directory>
 ```
+#### 2. Run the Main Program
+```bash
+python main.py
+```
 
 ### Task Division
 | Member                                    | Responsibilities                                                                                                                                                             |
